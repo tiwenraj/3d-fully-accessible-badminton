@@ -18,6 +18,7 @@ import java.util.List;
 
 public class MainActivity extends Activity {
     private FootballRenderer renderer;
+    private GLSurfaceView gameSurface;
     private TextView scoreLabel;
     private final List<Button> controlButtons = new ArrayList<>();
     private boolean highContrast = false;
@@ -36,7 +37,7 @@ public class MainActivity extends Activity {
         renderer = new FootballRenderer(score -> runOnUiThread(() ->
                 scoreLabel.setText("GOALS  " + score)));
 
-        GLSurfaceView gameSurface = new GLSurfaceView(this);
+        gameSurface = new GLSurfaceView(this);
         gameSurface.setEGLContextClientVersion(2);
         gameSurface.setRenderer(renderer);
         gameSurface.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
@@ -170,9 +171,17 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
+        if (gameSurface != null) {
+            gameSurface.onPause();
+        }
         super.onPause();
-        if (renderer != null) {
-            // The GLSurfaceView is resumed and paused with the activity lifecycle.
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (gameSurface != null) {
+            gameSurface.onResume();
         }
     }
 }
