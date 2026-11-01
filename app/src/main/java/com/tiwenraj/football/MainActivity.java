@@ -34,8 +34,11 @@ public class MainActivity extends Activity {
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.rgb(12, 45, 33));
 
-        renderer = new FootballRenderer(score -> runOnUiThread(() ->
-                scoreLabel.setText("GOALS  " + score)));
+        renderer = new FootballRenderer(score -> runOnUiThread(() -> {
+            scoreLabel.setText("GOALS  " + score);
+            scoreLabel.setContentDescription("Goals scored: " + score);
+            scoreLabel.announceForAccessibility("Goal! Score " + score);
+        }));
 
         gameSurface = new GLSurfaceView(this);
         gameSurface.setEGLContextClientVersion(2);
