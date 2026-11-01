@@ -152,7 +152,7 @@ public final class FootballRenderer implements GLSurfaceView.Renderer {
 
             ballX += ballVelocityX * delta;
             ballZ += ballVelocityZ * delta;
-            float damping = (float) Math.pow(0.97, delta * 60f);
+            float damping = (float) Math.pow(0.995, delta * 60f);
             ballVelocityX *= damping;
             ballVelocityZ *= damping;
 
