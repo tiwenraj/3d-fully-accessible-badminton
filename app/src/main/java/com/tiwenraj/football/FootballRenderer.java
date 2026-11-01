@@ -28,9 +28,14 @@ public final class FootballRenderer implements GLSurfaceView.Renderer {
     private float ballZ = -5.3f;
     private float ballVelocityX = 0f;
     private float ballVelocityZ = 0f;
+    private float keeperX = 0f;
+    private float keeperDirection = 1f;
+    private boolean gameRunning = true;
+    private boolean playerHasBall = false;
     private float movementX = 0f;
     private float movementZ = 0f;
     private int goals = 0;
+    private int saves = 0;
     private boolean highContrast = false;
 
     private int program;
@@ -68,10 +73,12 @@ public final class FootballRenderer implements GLSurfaceView.Renderer {
 
     public void kick() {
         synchronized (stateLock) {
+            if (!gameRunning) return;
             float dx = ballX - playerX;
             float dz = ballZ - playerZ;
             float distance = (float) Math.sqrt(dx * dx + dz * dz);
             if (distance <= 4.2f) {
+                playerHasBall = false;
                 ballVelocityX = (playerX - ballX) * 0.7f;
                 ballVelocityZ = 14.5f;
             }
@@ -134,7 +141,7 @@ public final class FootballRenderer implements GLSurfaceView.Renderer {
         drawPitch();
         drawGoal();
         drawPlayer(playerX, playerZ, new float[]{0.10f, 0.42f, 0.95f, 1f});
-        drawPlayer(-ballX * 0.28f, 11.2f, new float[]{0.86f, 0.16f, 0.15f, 1f});
+        drawGoalkeeper(keeperX, 14.8f);
         drawSphere(ballX, 0.38f, ballZ, 0.34f, 0.34f, 0.34f,
                 new float[]{0.96f, 0.97f, 0.98f, 1f});
 
@@ -150,11 +157,44 @@ public final class FootballRenderer implements GLSurfaceView.Renderer {
             playerZ = clamp(playerZ + movementZ * 5.8f * delta,
                     -14f, 7.5f);
 
-            ballX += ballVelocityX * delta;
-            ballZ += ballVelocityZ * delta;
+            // A simple goalkeeper patrols the goal mouth.
+            keeperX += keeperDirection * 3.2f * delta;
+            if (keeperX > 1.7f || keeperX < -1.7f) {
+                keeperDirection *= -1f;
+                keeperX = clamp(keeperX, -1.7f, 1.7f);
+            }
+
+            // The ball follows the player when close and not moving after a shot.
+            float playerBallDx = ballX - playerX;
+            float playerBallDz = ballZ - playerZ;
+            float playerBallDistance = (float) Math.sqrt(playerBallDx * playerBallDx + playerBallDz * playerBallDz);
+            if (!playerHasBall && Math.abs(ballVelocityX) < 0.35f && Math.abs(ballVelocityZ) < 0.35f
+                    && playerBallDistance < 1.15f) {
+                playerHasBall = true;
+            }
+            if (playerHasBall) {
+                ballX = playerX;
+                ballZ = playerZ + 0.75f;
+                ballVelocityX = 0f;
+                ballVelocityZ = 0f;
+            }
+
+            if (!playerHasBall) {
+                ballX += ballVelocityX * delta;
+                ballZ += ballVelocityZ * delta;
+            }
             float damping = (float) Math.pow(0.995, delta * 60f);
             ballVelocityX *= damping;
             ballVelocityZ *= damping;
+
+            // Goalkeeper save: intercept a moving ball in front of the goal.
+            if (!playerHasBall && ballZ > 13.7f && ballZ < 15.9f
+                    && Math.abs(ballX - keeperX) < 0.85f
+                    && ballVelocityZ > 1.2f) {
+                saves++;
+                ballVelocityZ = -5.5f;
+                ballVelocityX += (ballX - keeperX) * 1.5f;
+            }
 
             if (ballZ >= 15.8f && Math.abs(ballX) <= 2.15f) {
                 goals++;
@@ -176,6 +216,7 @@ public final class FootballRenderer implements GLSurfaceView.Renderer {
         ballZ = -5.3f;
         ballVelocityX = 0f;
         ballVelocityZ = 0f;
+        playerHasBall = false;
     }
 
     private void drawPitch() {
@@ -245,6 +286,14 @@ public final class FootballRenderer implements GLSurfaceView.Renderer {
             cube(i * 0.8f, 1.1f, 16.8f, 0.035f, 2.1f, 0.035f, net);
         }
         cube(0f, 0.06f, 16.8f, 4.1f, 0.04f, 0.04f, net);
+    }
+
+    private void drawGoalkeeper(float x, float z) {
+        float[] jersey = new float[]{0.96f, 0.72f, 0.06f, 1f};
+        float[] gloves = new float[]{0.96f, 0.96f, 0.96f, 1f};
+        drawPlayer(x, z, jersey);
+        sphere(x - 0.68f, 1.02f, z, 0.16f, 0.16f, 0.16f, gloves);
+        sphere(x + 0.68f, 1.02f, z, 0.16f, 0.16f, 0.16f, gloves);
     }
 
     private void drawPlayer(float x, float z, float[] shirt) {
