@@ -4,7 +4,7 @@ plugins {
 
 android {
     namespace = "com.tiwenraj.football"
-    compileSdk = 37
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.tiwenraj.football"
