@@ -7,7 +7,6 @@ import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.MotionEvent;
-import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -20,6 +19,7 @@ public class MainActivity extends Activity {
     private FootballRenderer renderer;
     private GLSurfaceView gameSurface;
     private TextView scoreLabel;
+    private SoundManager sounds;
     private final List<Button> controlButtons = new ArrayList<>();
     private boolean highContrast = false;
     private boolean largeControls = false;
@@ -27,17 +27,18 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         getWindow().setStatusBarColor(Color.rgb(8, 22, 32));
         getWindow().setNavigationBarColor(Color.rgb(8, 22, 32));
 
+        sounds = new SoundManager();
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.rgb(12, 45, 33));
 
         renderer = new FootballRenderer(score -> runOnUiThread(() -> {
-            scoreLabel.setText("GOALS  " + score);
-            scoreLabel.setContentDescription("Goals scored: " + score);
-            scoreLabel.announceForAccessibility("Goal! Score " + score);
+            scoreLabel.setText("POINTS  " + score);
+            scoreLabel.setContentDescription("Points won: " + score);
+            scoreLabel.announceForAccessibility("Point won! Your score is " + score);
+            sounds.playPoint();
         }));
 
         gameSurface = new GLSurfaceView(this);
@@ -45,33 +46,42 @@ public class MainActivity extends Activity {
         gameSurface.setRenderer(renderer);
         gameSurface.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
         gameSurface.setContentDescription(
-                "Three-dimensional badminton court. Use the movement buttons and Hit the shuttle over the net.");
+                "Three-dimensional badminton court. Move with the direction buttons and tap HIT to strike the shuttlecock.");
         root.addView(gameSurface, new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT));
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
 
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
-        topBar.setPadding(dp(12), dp(6), dp(12), dp(6));
+        topBar.setPadding(dp(12), dp(4), dp(12), dp(4));
         topBar.setBackgroundColor(0xCC0B1C2A);
 
         scoreLabel = new TextView(this);
-        scoreLabel.setText("GOALS  0");
+        scoreLabel.setText("POINTS  0");
         scoreLabel.setTextColor(Color.WHITE);
         scoreLabel.setTextSize(20);
         scoreLabel.setTypeface(null, android.graphics.Typeface.BOLD);
-        scoreLabel.setContentDescription("Goals scored: 0");
-        topBar.addView(scoreLabel, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
+        scoreLabel.setContentDescription("Points won: 0");
+        topBar.addView(scoreLabel);
 
         TextView hint = new TextView(this);
-        hint.setText("   TRAINING  •  Move, then kick");
+        hint.setText("   BADMINTON  •  Move and hit the shuttle");
         hint.setTextColor(Color.WHITE);
         hint.setTextSize(14);
-        topBar.addView(hint, new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        topBar.addView(hint, new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+        Button music = new Button(this);
+        music.setAllCaps(false);
+        music.setText("Music: ON");
+        music.setContentDescription("Toggle background music");
+        music.setOnClickListener(v -> {
+            boolean enabled = !sounds.isMusicEnabled();
+            sounds.setMusicEnabled(enabled);
+            music.setText(enabled ? "Music: ON" : "Music: OFF");
+            music.setContentDescription("Background music " + (enabled ? "on" : "off") + ". Toggle music");
+        });
+        topBar.addView(music);
 
         Button settings = new Button(this);
         settings.setText("Accessibility");
@@ -80,37 +90,35 @@ public class MainActivity extends Activity {
         settings.setOnClickListener(v -> showAccessibilitySettings());
         topBar.addView(settings);
 
-        FrameLayout.LayoutParams topParams = new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT,
-                Gravity.TOP);
-        root.addView(topBar, topParams);
+        root.addView(topBar, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.TOP));
 
         LinearLayout controls = new LinearLayout(this);
         controls.setOrientation(LinearLayout.HORIZONTAL);
         controls.setGravity(Gravity.CENTER);
-        controls.setPadding(dp(8), dp(6), dp(8), dp(6));
+        controls.setPadding(dp(8), dp(4), dp(8), dp(4));
         controls.setBackgroundColor(0xCC0B1C2A);
 
-        addMovementButton(controls, "◀  LEFT", "Move player left", -1f, 0f);
-        addMovementButton(controls, "▲  UP", "Move player forward around the court", 0f, 1f);
-        addMovementButton(controls, "▼  DOWN", "Move player backward", 0f, -1f);
-        addMovementButton(controls, "RIGHT  ▶", "Move player right", 1f, 0f);
+        addMovementButton(controls, "◀ LEFT", "Move player left", -1f, 0f);
+        addMovementButton(controls, "▲ FORWARD", "Move player toward the net", 0f, 1f);
+        addMovementButton(controls, "▼ BACK", "Move player backward", 0f, -1f);
+        addMovementButton(controls, "RIGHT ▶", "Move player right", 1f, 0f);
 
-        Button kick = new Button(this);
-        kick.setText("KICK");
-        kick.setAllCaps(false);
-        kick.setTextSize(18);
-        kick.setTypeface(null, android.graphics.Typeface.BOLD);
-        kick.setContentDescription("Kick the football around the court");
-        kick.setOnClickListener(v -> renderer.kick());
-        controls.addView(kick, controlLayoutParams());
-        controlButtons.add(kick);
+        Button hit = new Button(this);
+        hit.setText("HIT");
+        hit.setAllCaps(false);
+        hit.setTextSize(20);
+        hit.setTypeface(null, android.graphics.Typeface.BOLD);
+        hit.setContentDescription("Hit the badminton shuttlecock");
+        hit.setOnClickListener(v -> {
+            renderer.kick();
+            sounds.playHit();
+        });
+        controls.addView(hit, controlLayoutParams());
+        controlButtons.add(hit);
 
-        FrameLayout.LayoutParams controlsParams = new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT,
-                Gravity.BOTTOM);
-        root.addView(controls, controlsParams);
-
+        root.addView(controls, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
         setContentView(root);
     }
 
@@ -122,33 +130,26 @@ public class MainActivity extends Activity {
         button.setTextSize(16);
         button.setContentDescription(description);
         button.setOnTouchListener((view, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                renderer.setMovement(x, z);
-            } else if (event.getAction() == MotionEvent.ACTION_UP
-                    || event.getAction() == MotionEvent.ACTION_CANCEL) {
-                renderer.setMovement(0f, 0f);
-            }
+            if (event.getAction() == MotionEvent.ACTION_DOWN) renderer.setMovement(x, z);
+            else if (event.getAction() == MotionEvent.ACTION_UP
+                    || event.getAction() == MotionEvent.ACTION_CANCEL) renderer.setMovement(0f, 0f);
             return false;
         });
-        // A tap or a screen-reader click also moves the player a short distance.
         button.setOnClickListener(v -> renderer.nudge(x, z));
         row.addView(button, controlLayoutParams());
         controlButtons.add(button);
     }
 
     private LinearLayout.LayoutParams controlLayoutParams() {
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                0, dp(58), 1f);
-        params.setMargins(dp(4), 0, dp(4), 0);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, dp(58), 1f);
+        params.setMargins(dp(3), 0, dp(3), 0);
         return params;
     }
 
     private void showAccessibilitySettings() {
         String[] choices = {"High-contrast court", "Larger on-screen controls"};
         boolean[] checked = {highContrast, largeControls};
-
-        new AlertDialog.Builder(this)
-                .setTitle("Accessibility settings")
+        new AlertDialog.Builder(this).setTitle("Accessibility settings")
                 .setMultiChoiceItems(choices, checked, (dialog, which, isChecked) -> {
                     if (which == 0) {
                         highContrast = isChecked;
@@ -163,28 +164,27 @@ public class MainActivity extends Activity {
                             button.setLayoutParams(params);
                         }
                     }
-                })
-                .setPositiveButton("Done", null)
-                .show();
+                }).setPositiveButton("Done", null).show();
     }
 
     private int dp(float value) {
         return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
     }
 
-    @Override
-    protected void onPause() {
-        if (gameSurface != null) {
-            gameSurface.onPause();
-        }
+    @Override protected void onPause() {
+        if (gameSurface != null) gameSurface.onPause();
+        if (sounds != null) sounds.stopMusic();
         super.onPause();
     }
 
-    @Override
-    protected void onResume() {
+    @Override protected void onResume() {
         super.onResume();
-        if (gameSurface != null) {
-            gameSurface.onResume();
-        }
+        if (gameSurface != null) gameSurface.onResume();
+        if (sounds != null) sounds.startMusic();
+    }
+
+    @Override protected void onDestroy() {
+        if (sounds != null) sounds.release();
+        super.onDestroy();
     }
 }
