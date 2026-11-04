@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.tiwenraj.badminton"
+    namespace = "com.tiwenraj.football"
     compileSdk = 36
 
     defaultConfig {
