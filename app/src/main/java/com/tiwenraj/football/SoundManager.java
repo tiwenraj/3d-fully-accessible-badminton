@@ -27,7 +27,6 @@ public final class SoundManager {
         track = new AudioTrack(AudioManager.STREAM_MUSIC, RATE,
                 AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
                 bufferSize, AudioTrack.MODE_STREAM);
-        track.setLoopPoints(0, -1, 0);
         track.play();
         musicThread = new Thread(() -> {
             short[] samples = new short[1024];
