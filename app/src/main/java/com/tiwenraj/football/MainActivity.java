@@ -101,7 +101,7 @@ public class MainActivity extends Activity {
         kick.setAllCaps(false);
         kick.setTextSize(18);
         kick.setTypeface(null, android.graphics.Typeface.BOLD);
-        kick.setContentDescription("Kick the football toward the goal");
+        kick.setContentDescription("Kick the football around the court");
         kick.setOnClickListener(v -> renderer.kick());
         controls.addView(kick, controlLayoutParams());
         controlButtons.add(kick);
