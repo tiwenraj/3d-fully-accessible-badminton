@@ -119,7 +119,7 @@ public final class FootballRenderer implements GLSurfaceView.Renderer {
                     if (Math.abs(sx - ox) < 1.35f && sy > .55f) {
                         returning = true;
                         vx = (px - ox) * .12f;
-                        vy = 4.6f;
+                        vy = 7.0f;
                         vz = -8.2f;
                     } else {
                         score++;
