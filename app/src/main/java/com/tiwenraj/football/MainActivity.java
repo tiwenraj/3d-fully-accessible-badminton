@@ -45,7 +45,7 @@ public class MainActivity extends Activity {
         gameSurface.setRenderer(renderer);
         gameSurface.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
         gameSurface.setContentDescription(
-                "Three-dimensional football training pitch. Use the movement buttons and Kick to score.");
+                "Three-dimensional badminton court. Use the movement buttons and Hit the shuttle over the net.");
         root.addView(gameSurface, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
@@ -92,7 +92,7 @@ public class MainActivity extends Activity {
         controls.setBackgroundColor(0xCC0B1C2A);
 
         addMovementButton(controls, "◀  LEFT", "Move player left", -1f, 0f);
-        addMovementButton(controls, "▲  UP", "Move player forward toward the goal", 0f, 1f);
+        addMovementButton(controls, "▲  UP", "Move player forward around the court", 0f, 1f);
         addMovementButton(controls, "▼  DOWN", "Move player backward", 0f, -1f);
         addMovementButton(controls, "RIGHT  ▶", "Move player right", 1f, 0f);
 
@@ -144,7 +144,7 @@ public class MainActivity extends Activity {
     }
 
     private void showAccessibilitySettings() {
-        String[] choices = {"High-contrast pitch", "Larger on-screen controls"};
+        String[] choices = {"High-contrast court", "Larger on-screen controls"};
         boolean[] checked = {highContrast, largeControls};
 
         new AlertDialog.Builder(this)
